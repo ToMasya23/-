@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>お返事撃退‼️ブロックするー😡</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #f0f0f0;
+            overflow: hidden; /* Prevent scrolling body */
+            touch-action: none; /* Prevent browser zoom/scroll */
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Smartphone Container */
+        #app-container {
+            width: 100%;
+            height: 100%;
+            max-width: 480px; /* Mobile width constraint */
+            margin: 0 auto;
+            background-color: #fff;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Screen transitions */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            z-index: 10;
+            background-color: #fff;
+        }
+
+        .screen.active {
+            display: flex;
+            z-index: 20; /* Ensure active screen is on top */
+        }
+
+        /* Scrollable content area for safe viewing on small screens */
+        .safe-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Center if space allows */
+            padding: 2rem 1rem;
+            min-height: 0; /* Important for nested flex scroll */
+        }
+        
+        /* Ensure content doesn't get cut off in justify-center when small */
+        @media (max-height: 600px) {
+            .safe-scroll-area {
+                justify-content: flex-start;
+            }
+        }
+
+        /* Talk Room Style */
+        .talk-bg {
+            background-color: #7296cf; /* Classic talk app blueish bg */
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Canvas Overlay */
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Animations */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7); transform: scale(1); }
+            50% { box-shadow: 0 0 0 15px rgba(255, 0, 0, 0); transform: scale(1.1); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0); transform: scale(1); }
+        }
+        .breakthrough-active {
+            animation: pulse-red 0.5s infinite;
+            border: 2px solid #ff4444;
+            background: linear-gradient(135deg, #ff0000 0%, #ff8800 100%);
+        }
+
+        .notification-badge {
+            background-color: #ff4444;
+            color: white;
+            border-radius: 9999px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            min-width: 1.5em;
+            text-align: center;
+            display: inline-block;
+        }
+
+        /* Cut-in Animation */
+        @keyframes slide-in {
+            0% { transform: translateX(-100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in {
+            animation: slide-in 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    
+    <!-- 1. Start Screen -->
+    <div id="screen-start" class="screen active bg-green-500 text-white text-center">
+        <div class="safe-scroll-area">
+            <div class="mb-8">
+                <h1 class="text-4xl font-bold mb-2 drop-shadow-md">お返事撃退‼️</h1>
+                <h2 class="text-3xl font-bold text-yellow-300 drop-shadow-md">ブロックするー😡</h2>
+            </div>
+            
+            <div class="animate-bounce text-6xl mb-12">📱💥</div>
+            
+            <button onclick="window.gameApp.showScreen('home')" class="bg-white text-green-600 px-8 py-3 rounded-full font-bold text-xl shadow-lg hover:scale-105 transition transform cursor-pointer z-50">
+                スタート
+            </button>
+            
+            <div class="mt-8 bg-black/20 p-4 rounded-xl text-sm text-left inline-block max-w-xs backdrop-blur-sm">
+                <p class="font-bold mb-2 border-b border-white/30 pb-1">🎮 操作方法</p>
+                <div class="grid grid-cols-[60px_1fr] gap-2">
+                    <span class="opacity-80">PC:</span>
+                    <span>WASD移動 / Space攻撃 / Q必殺技</span>
+                    <span class="opacity-80">スマホ:</span>
+                    <span>スワイプ移動 / 自動攻撃 / 2本指タップ必殺技</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Home Screen -->
+    <div id="screen-home" class="screen bg-gray-100">
+        <!-- Status Bar -->
+        <div class="bg-black text-white px-4 py-1 text-xs flex justify-between items-center opacity-80 shrink-0">
+            <span>12:34</span>
+            <div class="flex gap-1">
+                <i class="fas fa-signal"></i>
+                <i class="fas fa-wifi"></i>
+                <i class="fas fa-battery-full"></i>
+            </div>
+        </div>
+        
+        <!-- Wallpaper Area -->
+        <div class="flex-1 relative overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" class="absolute inset-0 w-full h-full object-cover opacity-80" alt="wallpaper">
+            
+            <!-- Apps Grid -->
+            <div class="relative z-10 grid grid-cols-4 gap-4 p-6 pt-10">
+                <!-- Message App (Play) -->
+                <div class="flex flex-col items-center gap-1 cursor-pointer group" onclick="window.gameApp.showScreen('select')">
+                    <div class="w-14 h-14 bg-green-500 rounded-2xl flex items-center justify-center text-white text-3xl shadow-md relative group-active:scale-95 transition">
+                        <i class="fas fa-comment-dots"></i>
+                        <div id="home-badge" class="absolute -top-1 -right-1 notification-badge">99+</div>
+                    </div>
+                    <span class="text-xs font-bold text-white drop-shadow-md">トーク</span>
+                </div>
+
+                <!-- Help App -->
+                <div class="flex flex-col items-center gap-1 cursor-pointer group" onclick="window.gameApp.showScreen('help')">
+                    <div class="w-14 h-14 bg-pink-400 rounded-2xl flex items-center justify-center text-white text-3xl shadow-md group-active:scale-95 transition">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <span class="text-xs font-bold text-white drop-shadow-md">操作説明</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dock -->
+        <div class="h-20 bg-white/30 backdrop-blur-md flex justify-around items-center px-4 pb-2 shrink-0">
+            <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center text-white text-2xl shadow-sm"><i class="fas fa-phone"></i></div>
+            <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white text-2xl shadow-sm"><i class="fas fa-globe"></i></div>
+            <div class="w-12 h-12 bg-yellow-400 rounded-xl flex items-center justify-center text-white text-2xl shadow-sm"><i class="fas fa-envelope"></i></div>
+            <div class="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center text-white text-2xl shadow-sm"><i class="fas fa-music"></i></div>
+        </div>
+    </div>
+
+    <!-- 3. Stage Select -->
+    <div id="screen-select" class="screen bg-white flex flex-col">
+        <div class="bg-gray-800 text-white p-4 flex items-center gap-4 shadow-md z-20 shrink-0">
+            <button onclick="window.gameApp.showScreen('home')"><i class="fas fa-chevron-left text-xl"></i></button>
+            <h2 class="text-xl font-bold">トーク一覧</h2>
+            <div class="ml-auto flex gap-4 text-gray-400">
+                <i class="fas fa-search"></i>
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto">
+            <!-- Stage 1: Oji-san -->
+            <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex gap-3 transition" onclick="window.gameApp.startGame('oji')">
+                <div class="relative">
+                    <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-gray-200 text-3xl">
+                        <!-- Icon changed to Boss Emoji -->
+                        😁
+                    </div>
+                    <!-- Badge removed from here -->
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-baseline mb-1">
+                        <h3 class="font-bold text-gray-800 truncate">おぢさん</h3>
+                        <span class="text-xs text-gray-400">12:30</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm text-gray-500 truncate pr-2">カナちゃん‼️😅 今何してるのかな⁉️🤔 俺は...</p>
+                        <!-- Badge moved here -->
+                        <div id="badge-oji" class="notification-badge shrink-0">52</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage 2: Horde Mode -->
+            <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex gap-3 transition" onclick="window.gameApp.startGame('horde')">
+                <div class="relative">
+                    <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border border-gray-200 text-3xl">
+                         <!-- Icon changed to Boss Emoji -->
+                         😁
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-baseline mb-1">
+                        <h3 class="font-bold text-gray-800 truncate">オヂさんの大群</h3>
+                        <span class="text-xs text-gray-400">昨日</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm text-gray-500 truncate pr-2">おーい！おーい！おーい！😅😅😅</p>
+                        <!-- Badge moved here -->
+                        <div id="badge-horde" class="notification-badge shrink-0">99+</div>
+                    </div>
+                </div>
+            </div>
+            
+             <!-- Stage 3: Angry Boss (New!) -->
+             <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer flex gap-3 transition" onclick="window.gameApp.startGame('angry')">
+                <div class="relative">
+                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center overflow-hidden border border-gray-200 text-3xl">
+                        <!-- Icon changed to Boss Emoji -->
+                        😡
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-baseline mb-1">
+                        <h3 class="font-bold text-gray-800 truncate">【緊急】怒りの説教オヂ</h3>
+                        <span class="text-xs text-gray-400">たった今</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm text-gray-500 truncate pr-2">社会人としてその態度はどうなんだ？親の顔が...</p>
+                        <!-- Badge moved here -->
+                        <div id="badge-angry" class="notification-badge shrink-0">!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Game Screen -->
+    <div id="screen-game" class="screen talk-bg flex flex-col">
+        <!-- Header -->
+        <div class="bg-gray-800 text-white p-3 flex items-center shadow-lg z-20 shrink-0">
+            <button onclick="window.gameApp.endGame()" class="mr-3"><i class="fas fa-chevron-left"></i></button>
+            <div id="game-enemy-name" class="font-bold text-lg">おぢさん</div>
+            <div class="ml-auto flex gap-3">
+                <i class="fas fa-phone"></i>
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="flex-1 relative overflow-hidden" id="game-area">
+            <canvas id="game-canvas"></canvas>
+            
+            <!-- Cut-in Overlay -->
+            <div id="stage-cutin" class="absolute inset-0 bg-black/90 z-40 flex items-center justify-center hidden pointer-events-none">
+                <h2 id="cutin-text" class="text-4xl md:text-5xl font-bold text-white tracking-widest text-center whitespace-pre-wrap animate-slide-in drop-shadow-lg p-4 border-y-4 border-red-500 bg-black/50 w-full"></h2>
+            </div>
+
+            <!-- UI Overlay -->
+            <div class="absolute top-2 left-2 text-white bg-black/50 px-2 py-1 rounded text-sm z-10 pointer-events-none">
+                Score: <span id="ui-score">0</span>
+                <span id="ui-wave" class="ml-2 bg-red-500 px-2 rounded hidden">BOSS!!</span>
+            </div>
+            
+            <!-- Bomb Button (Mobile UI) -->
+            <button id="btn-bomb" class="absolute bottom-20 right-4 w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold shadow-lg border-2 border-white flex flex-col items-center justify-center z-30 active:scale-95 transition" onclick="window.gameApp.triggerBreakthrough()">
+                <i class="fas fa-bomb mb-1"></i>
+                <span id="btn-bomb-label" class="text-[0.6rem] leading-none">B.THROUGH</span>
+            </button>
+        </div>
+
+        <!-- Footer (Input Area) -->
+        <div class="bg-white p-2 flex items-center gap-2 border-t border-gray-300 z-20 h-16 shrink-0">
+            <i class="fas fa-plus text-gray-400 text-xl p-2"></i>
+            <div class="flex-1 bg-gray-100 rounded-full h-10 px-4 flex items-center text-gray-400 text-sm select-none">
+                メッセージを入力...
+            </div>
+            <i class="fas fa-smile text-gray-400 text-xl p-2"></i>
+            <i class="fas fa-microphone text-gray-400 text-xl p-2"></i>
+        </div>
+        
+        <!-- Game Over / Win Overlay -->
+        <div id="game-result" class="absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center text-white hidden">
+            <h2 id="result-title" class="text-4xl font-bold mb-4 text-red-500">既読スルー失敗...</h2>
+            <p id="result-score" class="text-xl mb-4">Score: 1200</p>
+            <!-- New Message Element -->
+            <div id="result-message" class="text-lg text-center mb-8 animate-bounce leading-relaxed"></div>
+            
+            <button onclick="window.gameApp.showScreen('select')" class="bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-gray-200">
+                戻る
+            </button>
+        </div>
+    </div>
+
+    <!-- 5. Help Screen -->
+    <div id="screen-help" class="screen bg-white p-6 flex flex-col">
+        <h2 class="text-2xl font-bold mb-6 text-pink-500"><i class="fas fa-brain mr-2"></i>操作説明</h2>
+        
+        <div class="space-y-6 flex-1 overflow-y-auto">
+            <div class="bg-gray-50 p-4 rounded-xl">
+                <h3 class="font-bold text-lg mb-2">基本ルール</h3>
+                <p class="text-sm text-gray-600">上から降ってくる「めんどくさいメッセージ」を避けて、こちらの返信（弾）をぶつけよう！</p>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-xl">
+                <h3 class="font-bold text-lg mb-2">PC操作</h3>
+                <ul class="text-sm text-gray-600 space-y-2">
+                    <li><span class="font-bold bg-white px-2 py-1 rounded shadow text-xs">WASD</span> 移動</li>
+                    <li><span class="font-bold bg-white px-2 py-1 rounded shadow text-xs">Space</span> 攻撃（長押し）</li>
+                    <li><span class="font-bold bg-white px-2 py-1 rounded shadow text-xs">Q</span> 必殺技「BREAKTHROUGH」</li>
+                </ul>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-xl">
+                <h3 class="font-bold text-lg mb-2">スマホ操作</h3>
+                <ul class="text-sm text-gray-600 space-y-2">
+                    <li><span class="font-bold">ドラッグ</span> 自機移動</li>
+                    <li><span class="font-bold">攻撃</span> 自動発射</li>
+                    <li><span class="font-bold">2本指タップ</span> 必殺技「BREAKTHROUGH」</li>
+                </ul>
+            </div>
+        </div>
+        
+        <button onclick="window.gameApp.showScreen('home')" class="mt-4 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">ホームに戻る</button>
+    </div>
+
+</div>
+
+<script>
+/**
+ * Game Logic
+ */
+class GameApp {
+    constructor() {
+        this.screens = document.querySelectorAll('.screen');
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.container = document.getElementById('game-area');
+        
+        // Game State
+        this.state = 'stop'; // stop, playing, cutin, paused, gameover
+        this.width = 0;
+        this.height = 0;
+        this.frames = 0;
+        this.score = 0;
+        this.stageId = null;
+        
+        // Stage progress tracking
+        this.stageProgress = 0;
+        this.bossActive = false;
+        
+        // Clear status
+        this.clearedStages = new Set();
+        this.killedOjiCount = 0; // For Horde Mode
+        
+        // Entities
+        this.player = null;
+        this.bullets = [];
+        this.enemies = [];
+        this.particles = [];
+        this.messages = []; // Text effects
+
+        // Input
+        this.keys = {};
+        this.touchX = null;
+        this.touchY = null;
+        this.isTouching = false;
+
+        // Breakthrough
+        this.breakthroughActive = false;
+        this.breakthroughUsed = false; // New flag for one-time use
+        this.breakthroughTimer = 0;
+        this.breakthroughMax = 300; // 5 seconds (60fps)
+        this.bannerEffect = null;
+
+        this.setupInputs();
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        
+        // Main Loop
+        this.loop = this.loop.bind(this);
+        requestAnimationFrame(this.loop);
+    }
+
+    showScreen(id) {
+        this.screens.forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-${id}`).classList.add('active');
+        
+        if(id !== 'game') {
+            this.state = 'stop';
+        }
+        
+        if (id === 'select' || id === 'home') {
+            this.updateBadges();
+        }
+    }
+
+    updateBadges() {
+        // Update stage badges
+        if (this.clearedStages.has('oji')) {
+            document.getElementById('badge-oji').classList.add('hidden');
+        }
+        if (this.clearedStages.has('horde')) {
+            document.getElementById('badge-horde').classList.add('hidden');
+        }
+        if (this.clearedStages.has('angry')) {
+            document.getElementById('badge-angry').classList.add('hidden');
+        }
+
+        // Update home screen badge
+        let unreadCount = 0;
+        if (!this.clearedStages.has('oji')) unreadCount++;
+        if (!this.clearedStages.has('horde')) unreadCount++;
+        if (!this.clearedStages.has('angry')) unreadCount++; 
+
+        const homeBadge = document.getElementById('home-badge');
+        if (unreadCount === 0) {
+            homeBadge.classList.add('hidden');
+        } else {
+            if (this.clearedStages.size >= 2) {
+                 homeBadge.innerText = "1";
+            }
+        }
+    }
+
+    resize() {
+        if(this.container) {
+            this.width = this.container.clientWidth;
+            this.height = this.container.clientHeight;
+            this.canvas.width = this.width;
+            this.canvas.height = this.height;
+        }
+    }
+
+    setupInputs() {
+        // Keyboard
+        window.addEventListener('keydown', e => {
+            this.keys[e.code] = true;
+            if (e.code === 'KeyQ' && this.state === 'playing') this.triggerBreakthrough();
+        });
+        window.addEventListener('keyup', e => this.keys[e.code] = false);
+
+        // Touch
+        this.canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            this.isTouching = true;
+            const rect = this.canvas.getBoundingClientRect();
+            this.touchX = e.touches[0].clientX - rect.left;
+            this.touchY = e.touches[0].clientY - rect.top;
+
+            // 2 finger tap for bomb
+            if (e.touches.length === 2 && this.state === 'playing') {
+                this.triggerBreakthrough();
+            }
+        }, {passive: false});
+
+        this.canvas.addEventListener('touchmove', e => {
+            e.preventDefault(); // Prevent scrolling
+            if(this.isTouching) {
+                const rect = this.canvas.getBoundingClientRect();
+                this.touchX = e.touches[0].clientX - rect.left;
+                this.touchY = e.touches[0].clientY - rect.top;
+            }
+        }, {passive: false});
+
+        this.canvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            if(e.touches.length === 0) this.isTouching = false;
+        });
+
+        // Mouse (for PC testing)
+        this.canvas.addEventListener('mousedown', e => {
+            this.isTouching = true;
+            this.touchX = e.offsetX;
+            this.touchY = e.offsetY;
+        });
+        this.canvas.addEventListener('mousemove', e => {
+            if(this.isTouching) {
+                this.touchX = e.offsetX;
+                this.touchY = e.offsetY;
+            }
+        });
+        this.canvas.addEventListener('mouseup', () => this.isTouching = false);
+    }
+
+    startGame(stageId) {
+        this.stageId = stageId;
+        this.resize();
+        this.showScreen('game');
+        
+        // Reset Game Data
+        this.frames = 0;
+        this.score = 0;
+        this.stageProgress = 0;
+        this.bossActive = false;
+        this.killedOjiCount = 0;
+        
+        this.bullets = [];
+        this.enemies = [];
+        this.particles = [];
+        this.messages = [];
+        
+        // Init Player
+        this.player = {
+            x: this.width / 2,
+            y: this.height - 80,
+            w: 24, // width/height slightly adjusted for emoji
+            h: 24,
+            speed: 5,
+            hp: 1, // Classic arcade style: 1 hit death
+            cooldown: 0
+        };
+
+        // Reset UI
+        document.getElementById('ui-score').innerText = '0';
+        document.getElementById('ui-wave').classList.add('hidden');
+        document.getElementById('game-result').classList.add('hidden');
+        
+        let enemyName = "";
+        if (stageId === 'oji') enemyName = 'おぢさん';
+        else if (stageId === 'horde') enemyName = 'オヂさんの大群';
+        else enemyName = '怒りの説教オヂ';
+        document.getElementById('game-enemy-name').innerText = enemyName;
+        
+        // Reset Breakthrough State
+        this.breakthroughActive = false;
+        this.breakthroughUsed = false;
+        this.breakthroughTimer = 0;
+        this.bannerEffect = null;
+        
+        const btn = document.getElementById('btn-bomb');
+        btn.classList.remove('breakthrough-active', 'opacity-50', 'grayscale');
+        btn.disabled = false;
+        document.getElementById('btn-bomb-label').innerText = 'B.THROUGH';
+
+        // CUT-IN SEQUENCE
+        let titleText = "";
+        if (stageId === 'oji') {
+            titleText = "第１話\nオヂさん襲来";
+        } else if (stageId === 'horde') {
+            titleText = "第２話\nオヂさんの大群";
+        } else {
+            titleText = "最終話\n怒りの説教オヂ";
+        }
+
+        // Show Cut-in
+        const cutinEl = document.getElementById('stage-cutin');
+        const cutinTextEl = document.getElementById('cutin-text');
+        
+        cutinTextEl.innerText = titleText;
+        cutinEl.classList.remove('hidden');
+        
+        // Set state to cutin (pauses game logic)
+        this.state = 'cutin';
+
+        // Wait then start
+        setTimeout(() => {
+            cutinEl.classList.add('hidden');
+            this.state = 'playing';
+        }, 2000); // 2 seconds
+    }
+
+    endGame() {
+        this.state = 'stop';
+        this.showScreen('select');
+    }
+
+    triggerBreakthrough() {
+        if(this.breakthroughUsed) return; // One time use
+        
+        this.breakthroughUsed = true;
+        this.breakthroughActive = true;
+        this.breakthroughTimer = this.breakthroughMax;
+        
+        // Activate Visuals
+        const btn = document.getElementById('btn-bomb');
+        btn.classList.add('breakthrough-active');
+        
+        // Init Banner Effect
+        this.bannerEffect = {
+            active: true,
+            x: -this.width, // Start from left outside
+            speed: 10, // Slower speed
+            text: "BREAKTHROUGH!!"
+        };
+        
+        // Clear all enemy bullets
+        this.bullets = this.bullets.filter(b => b.isPlayer);
+    }
+
+    update() {
+        // Only update logic if playing (pause during cutin)
+        if(this.state !== 'playing') return;
+
+        this.frames++;
+        
+        // --- Player Movement ---
+        // Keyboard
+        if (this.keys['ArrowLeft'] || this.keys['KeyA']) this.player.x -= this.player.speed;
+        if (this.keys['ArrowRight'] || this.keys['KeyD']) this.player.x += this.player.speed;
+        if (this.keys['ArrowUp'] || this.keys['KeyW']) this.player.y -= this.player.speed;
+        if (this.keys['ArrowDown'] || this.keys['KeyS']) this.player.y += this.player.speed;
+
+        // Touch / Mouse (Follow with lerp for smoothness)
+        if (this.isTouching && this.touchX !== null) {
+            const dx = this.touchX - this.player.x;
+            const dy = (this.touchY - 50) - this.player.y; // Offset so finger doesn't cover ship
+            this.player.x += dx * 0.2;
+            this.player.y += dy * 0.2;
+        }
+
+        // Clamp to screen
+        this.player.x = Math.max(10, Math.min(this.width - 10, this.player.x));
+        this.player.y = Math.max(10, Math.min(this.height - 10, this.player.y));
+
+        // --- Player Shooting ---
+        // Auto shoot on mobile/touch, Space/Click on PC
+        const isAuto = this.isTouching; 
+        const isKeyShoot = this.keys['Space'];
+        
+        if ((isAuto || isKeyShoot) && this.player.cooldown <= 0) {
+            // Normal shot
+            this.bullets.push({x: this.player.x, y: this.player.y - 10, vx: 0, vy: -10, isPlayer: true, color: '#4ade80'});
+            
+            // Breakthrough spread
+            if (this.breakthroughActive) {
+                this.bullets.push({x: this.player.x, y: this.player.y - 10, vx: -3, vy: -9, isPlayer: true, color: '#f87171'});
+                this.bullets.push({x: this.player.x, y: this.player.y - 10, vx: 3, vy: -9, isPlayer: true, color: '#f87171'});
+                this.player.cooldown = 4; // Faster
+            } else {
+                this.player.cooldown = 8;
+            }
+        }
+        if (this.player.cooldown > 0) this.player.cooldown--;
+
+        // Breakthrough Timer & Banner
+        if (this.bannerEffect && this.bannerEffect.active) {
+            this.bannerEffect.x += this.bannerEffect.speed;
+            if (this.bannerEffect.x > this.width * 1.5) {
+                this.bannerEffect.active = false;
+            }
+        }
+        
+        if (this.breakthroughActive) {
+            this.breakthroughTimer--;
+            if(this.breakthroughTimer <= 0) {
+                this.breakthroughActive = false;
+                const btn = document.getElementById('btn-bomb');
+                btn.classList.remove('breakthrough-active');
+                // Disable button UI
+                btn.classList.add('opacity-50', 'grayscale');
+                document.getElementById('btn-bomb-label').innerText = 'USED';
+            }
+        }
+
+        // --- Enemy Spawning & Logic ---
+        
+        if (this.stageId === 'oji') {
+            // == Stage 1: Oji-san ==
+            
+            // Phase 1: Zako (Kill 10)
+            if (!this.bossActive && this.stageProgress < 10) {
+                if (this.frames % 60 === 0) { // Every 1 sec
+                     // Short Oji-texts for zako
+                     const texts = ["ﾁﾗｯ", "元気？", "おーい", "✋", "😆", "起きてる？", "ﾅﾝﾁｬｯﾃ", "💦"];
+                     const text = texts[Math.floor(Math.random() * texts.length)];
+                     
+                     this.enemies.push({
+                        type: 'zako_chat',
+                        text: text,
+                        x: Math.random() * (this.width - 40) + 20,
+                        y: -30,
+                        w: 40, h: 30, hp: 1, // Width increased slightly for text
+                        vy: 2
+                     });
+                }
+            } 
+            // Phase 2: Boss Spawn
+            else if (!this.bossActive && this.stageProgress >= 10) {
+                this.bossActive = true;
+                // Summon Boss
+                this.enemies.push({
+                    type: 'boss_oji',
+                    text: '😁',
+                    x: this.width / 2,
+                    y: -80, // Start above screen
+                    w: 80, h: 80, hp: 50,
+                    vy: 0, 
+                    targetY: 80, // Destination y
+                    phase: 'enter'
+                });
+                // UI
+                const waveEl = document.getElementById('ui-wave');
+                waveEl.innerText = "BOSS!!";
+                waveEl.classList.remove('hidden');
+                
+                // Warning
+                this.messages.push({
+                    text: "BOSS!!",
+                    x: this.width/2, y: this.height/2,
+                    size: 40, life: 120, color: 'red'
+                });
+            }
+        } else if (this.stageId === 'horde') {
+            // == Stage 2: Oji Horde ==
+            // Every 5 seconds (300 frames), spawn a mini-boss and zakos
+            if (this.frames % 300 === 0) {
+                // Spawn Mini Oji
+                this.enemies.push({
+                    type: 'mini_oji',
+                    text: '😁',
+                    x: Math.random() * (this.width - 80) + 40,
+                    y: -40,
+                    w: 40, h: 40, hp: 10,
+                    vy: 2, // Entry speed
+                    // targetY: Math.random() * 150 + 50, // OLD
+                    targetY: Math.random() * 100 + 20,    // NEW: Stop position higher (20px to 120px)
+                    phase: 'enter'
+                });
+                
+                // Spawn Zakos
+                for(let k=0; k<3; k++) {
+                     const texts = ["おーい", "😅", "どこ住み？", "ご飯行こ", "カナちゃん"];
+                     const text = texts[Math.floor(Math.random() * texts.length)];
+                     this.enemies.push({
+                        type: 'zako_chat',
+                        text: text,
+                        x: Math.random() * (this.width - 40) + 20,
+                        y: -50 - (Math.random() * 50), // Staggered
+                        w: 40, h: 30, hp: 1,
+                        vy: 2
+                     });
+                }
+            }
+        } else if (this.stageId === 'angry') {
+            // == Stage 3: Angry Boss ==
+            if (!this.bossActive) {
+                this.bossActive = true;
+                // Summon Angry Boss immediately
+                this.enemies.push({
+                    type: 'boss_angry',
+                    text: '😡',
+                    x: this.width / 2,
+                    y: -80,
+                    w: 100, h: 100, hp: 100, // Higher HP
+                    vy: 0, 
+                    targetY: 80, 
+                    phase: 'enter'
+                });
+                // UI
+                const waveEl = document.getElementById('ui-wave');
+                waveEl.innerText = "BOSS!!";
+                waveEl.classList.remove('hidden');
+                
+                this.messages.push({
+                    text: "BOSS!!",
+                    x: this.width/2, y: this.height/2,
+                    size: 40, life: 120, color: 'red'
+                });
+            }
+        }
+
+        // --- Updates & Collision ---
+        
+        // Enemies
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            let e = this.enemies[i];
+            
+            // -- Movement Logic --
+            if (e.type === 'zako_chat') {
+                e.y += e.vy;
+            } else if (e.type === 'boss_oji') {
+                // Boss Logic
+                if (e.phase === 'enter') {
+                    e.y += 2;
+                    if (e.y >= e.targetY) e.phase = 'battle';
+                } else {
+                    // Sway left and right
+                    e.x = this.width / 2 + Math.sin(this.frames / 60) * (this.width / 2 - 60);
+                    
+                    // Attack logic
+                    if (this.frames % 100 === 0) {
+                        const texts = ["かわいいネ！", "こらっ！", "ナンチャッテ😅", "ご飯行こ", "😅"];
+                        const text = texts[Math.floor(Math.random() * texts.length)];
+                        this.bullets.push({
+                            x: e.x, y: e.y + 40,
+                            vx: (this.player.x - e.x) * 0.015, // Aim at player
+                            vy: 3,
+                            isPlayer: false,
+                            text: text,
+                            color: '#555'
+                        });
+                    }
+                }
+            } else if (e.type === 'mini_oji') {
+                // Mini Boss Logic (Stay in screen)
+                if (e.phase === 'enter') {
+                    e.y += e.vy;
+                    if (e.y >= e.targetY) {
+                        e.phase = 'battle';
+                        e.y = e.targetY;
+                    }
+                } else {
+                    // Hover and wiggle
+                    e.x += Math.sin((this.frames + e.y) / 40) * 1.5; 
+                }
+                
+                // Shoot occasionally
+                if (this.frames % 150 === 0 && Math.random() > 0.5) {
+                     this.bullets.push({
+                        x: e.x, y: e.y + 20,
+                        vx: 0, vy: 3,
+                        isPlayer: false,
+                        text: '❗',
+                        color: '#555'
+                    });
+                }
+            } else if (e.type === 'boss_angry') {
+                // Angry Boss Logic
+                if (e.phase === 'enter') {
+                    e.y += 2;
+                    if (e.y >= e.targetY) e.phase = 'battle';
+                } else {
+                    // Move quickly
+                    e.x = this.width / 2 + Math.sin(this.frames / 30) * (this.width / 2 - 60);
+                    
+                    // Attack logic (Faster, meaner)
+                    if (this.frames % 80 === 0) {
+                        const texts = ["返信しろ！", "親の顔が見たい", "マナー違反", "社会人失格", "失礼だぞ", "😡", "💢"];
+                        const text = texts[Math.floor(Math.random() * texts.length)];
+                        
+                        // Aimed shot
+                        this.bullets.push({
+                            x: e.x, y: e.y + 40,
+                            vx: (this.player.x - e.x) * 0.03, // Faster aimed
+                            vy: 5, // Faster speed
+                            isPlayer: false,
+                            text: text,
+                            color: '#d32f2f' // Red color text
+                        });
+                        
+                        // Spread shot (Anger outburst)
+                        if (Math.random() > 0.7) {
+                             this.bullets.push({x: e.x, y: e.y+40, vx: -3, vy: 4, isPlayer: false, text: '💢', color: '#f00'});
+                             this.bullets.push({x: e.x, y: e.y+40, vx: 3, vy: 4, isPlayer: false, text: '💢', color: '#f00'});
+                        }
+                    }
+                }
+            } else {
+                // Generic fall
+                e.y += e.vy;
+            }
+
+            // Remove offscreen (Only if not boss AND not mini_oji)
+            if (e.y > this.height + 50 && e.type !== 'boss_oji' && e.type !== 'mini_oji' && e.type !== 'boss_angry') this.enemies.splice(i, 1);
+
+            // Collision Player vs Enemy Body
+            if (!this.breakthroughActive && Math.abs(e.x - this.player.x) < (e.w/2 + this.player.w/2) && Math.abs(e.y - this.player.y) < (e.h/2 + this.player.h/2)) {
+                this.gameOver();
+            }
+        }
+
+        // Bullets
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            let b = this.bullets[i];
+            b.x += b.vx;
+            b.y += b.vy;
+
+            // Remove offscreen
+            if (b.x < -50 || b.x > this.width + 50 || b.y < -50 || b.y > this.height + 50) {
+                this.bullets.splice(i, 1);
+                continue;
+            }
+
+            // Collision
+            if (b.isPlayer) {
+                // Check Enemy Hit
+                for (let j = this.enemies.length - 1; j >= 0; j--) {
+                    let e = this.enemies[j];
+                    if (Math.abs(b.x - e.x) < e.w && Math.abs(b.y - e.y) < e.h) {
+                        e.hp--;
+                        this.bullets.splice(i, 1); // Remove bullet
+                        
+                        // Hit effect
+                        this.particles.push({x: b.x, y: b.y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, life: 10, color: '#fff'});
+
+                        if (e.hp <= 0) {
+                            // Enemy Destroyed
+                            const isBoss = (e.type === 'boss_oji' || e.type === 'boss_angry');
+                            const isMiniBoss = (e.type === 'mini_oji');
+                            
+                            this.enemies.splice(j, 1);
+                            
+                            // Score & Progress
+                            let pts = 100;
+                            if (isBoss) pts = 10000;
+                            if (isMiniBoss) pts = 1000;
+                            
+                            this.score += pts;
+                            document.getElementById('ui-score').innerText = this.score;
+                            
+                            // Explosion text
+                            this.messages.push({
+                                text: (isBoss || isMiniBoss) ? "BLOCK完了!" : "既読",
+                                x: e.x, y: e.y,
+                                size: (isBoss) ? 30 : 16, life: 60, color: (isBoss || isMiniBoss) ? '#f00' : '#fff'
+                            });
+
+                            // Boss Defeated?
+                            if (isBoss) {
+                                setTimeout(() => { this.gameOver(true); }, 1000);
+                            } else if (e.type === 'zako_chat') {
+                                this.stageProgress++;
+                            } else if (isMiniBoss) {
+                                this.killedOjiCount++;
+                                if (this.killedOjiCount >= 5) {
+                                    setTimeout(() => { this.gameOver(true); }, 1000);
+                                }
+                            }
+                        }
+                        break; // One bullet hits one enemy
+                    }
+                }
+            } else {
+                // Enemy Bullet vs Player
+                if (!this.breakthroughActive) {
+                    let isHit = false;
+                    
+                    if (b.text) {
+                        // Text Bullet Hitbox (Rect)
+                        // Estimate Width: text.length * 14px, Height: 20px
+                        const textW = Math.max(20, b.text.length * 14);
+                        const textH = 20;
+                        const dx = Math.abs(b.x - this.player.x);
+                        const dy = Math.abs(b.y - this.player.y);
+                        
+                        // AABB check + small tolerance for player radius (8)
+                        if (dx < (textW / 2 + 8) && dy < (textH / 2 + 8)) {
+                            isHit = true;
+                        }
+                    } else {
+                        // Normal Bullet Hitbox (Circle)
+                        let dist = Math.hypot(b.x - this.player.x, b.y - this.player.y);
+                        if (dist < 10) isHit = true;
+                    }
+
+                    if (isHit) {
+                        this.gameOver();
+                    }
+                }
+            }
+        }
+
+        // Particles
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            let p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life--;
+            if (p.life <= 0) this.particles.splice(i, 1);
+        }
+
+        // Messages (Effects)
+        for (let i = this.messages.length - 1; i >= 0; i--) {
+            let m = this.messages[i];
+            m.y -= 0.5;
+            m.life--;
+            if (m.life <= 0) this.messages.splice(i, 1);
+        }
+    }
+
+    draw() {
+        // Allow drawing during 'cutin' so the game scene is visible behind the text (if we wanted), 
+        // but since cutin overlay is full opacity bg-black/90, it doesn't matter much.
+        // Just standard drawing.
+        if(this.state !== 'playing' && this.state !== 'gameover' && this.state !== 'cutin') return;
+
+        // Clear
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        // Player (Girl Emoji)
+        this.ctx.save();
+        this.ctx.translate(this.player.x, this.player.y);
+        
+        // Aura when breakthrough
+        if (this.breakthroughActive) {
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = 'red';
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            this.ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+            this.ctx.fill();
+        }
+
+        // Draw Emoji
+        this.ctx.font = '32px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText('👧', 0, 0); // Girl Emoji
+
+        this.ctx.restore();
+
+        // Enemies (Message Bubbles)
+        this.ctx.font = 'bold 14px "M PLUS Rounded 1c"';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        
+        this.enemies.forEach(e => {
+            if (e.type === 'boss_oji') {
+                 // Boss Draw (Larger)
+                 this.ctx.font = '60px sans-serif';
+                 this.ctx.fillText(e.text, e.x, e.y);
+                 
+                 // HP Bar
+                 const barW = 100;
+                 const barH = 10;
+                 this.ctx.fillStyle = '#f00';
+                 this.ctx.fillRect(e.x - barW/2, e.y - 50, barW * (e.hp/50), barH);
+                 this.ctx.strokeStyle = '#fff';
+                 this.ctx.strokeRect(e.x - barW/2, e.y - 50, barW, barH);
+                 
+            } else if (e.type === 'boss_angry') {
+                 // Angry Boss Draw (Larger + Red Aura maybe?)
+                 this.ctx.font = '80px sans-serif';
+                 this.ctx.shadowColor = 'red';
+                 this.ctx.shadowBlur = 20;
+                 this.ctx.fillText(e.text, e.x, e.y);
+                 this.ctx.shadowBlur = 0; // reset
+                 
+                 // HP Bar
+                 const barW = 120;
+                 const barH = 12;
+                 this.ctx.fillStyle = '#f00';
+                 this.ctx.fillRect(e.x - barW/2, e.y - 60, barW * (e.hp/100), barH);
+                 this.ctx.strokeStyle = '#fff';
+                 this.ctx.strokeRect(e.x - barW/2, e.y - 60, barW, barH);
+
+            } else if (e.type === 'mini_oji') {
+                 // Mini Boss Draw
+                 this.ctx.font = '40px sans-serif';
+                 this.ctx.fillText(e.text, e.x, e.y);
+                 
+                 // Mini HP Bar (optional, maybe overkill for mini boss, but helpful)
+                 const barW = 40;
+                 const barH = 5;
+                 this.ctx.fillStyle = '#f00';
+                 this.ctx.fillRect(e.x - barW/2, e.y - 25, barW * (e.hp/10), barH);
+                 this.ctx.strokeStyle = '#fff';
+                 this.ctx.lineWidth = 1;
+                 this.ctx.strokeRect(e.x - barW/2, e.y - 25, barW, barH);
+
+            } else {
+                // Normal Enemy (Zako Chat)
+                this.ctx.font = 'bold 14px "M PLUS Rounded 1c"';
+                // Bubble
+                this.ctx.fillStyle = '#fff';
+                this.ctx.strokeStyle = '#e5e7eb';
+                this.ctx.lineWidth = 1;
+                
+                // Draw rounded rect bubble
+                const w = this.ctx.measureText(e.text).width + 20;
+                const h = 30;
+                this.ctx.beginPath();
+                
+                if (this.ctx.roundRect) {
+                    this.ctx.roundRect(e.x - w/2, e.y - h/2, w, h, 10);
+                } else {
+                    this.ctx.rect(e.x - w/2, e.y - h/2, w, h);
+                }
+                
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // Text
+                this.ctx.fillStyle = '#333';
+                this.ctx.fillText(e.text, e.x, e.y);
+                
+                // Little triangle for speech bubble
+                this.ctx.beginPath();
+                this.ctx.moveTo(e.x - 5, e.y - h/2);
+                this.ctx.lineTo(e.x - 10, e.y - h/2 - 5);
+                this.ctx.lineTo(e.x, e.y - h/2);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fill();
+            }
+        });
+
+        // Bullets
+        this.bullets.forEach(b => {
+            if (b.text) {
+                // Enemy bullet (text/emoji) with Bubble Background
+                this.ctx.font = 'bold 13px "M PLUS Rounded 1c"';
+                
+                // Measure text for bubble size
+                const metrics = this.ctx.measureText(b.text);
+                const w = metrics.width + 16;
+                const h = 26;
+
+                // Shadow for visibility
+                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                this.ctx.shadowBlur = 4;
+                this.ctx.shadowOffsetY = 2;
+
+                // Bubble background
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.strokeStyle = b.color || '#ff4444'; // Reddish border for danger
+                this.ctx.lineWidth = 2;
+                
+                this.ctx.beginPath();
+                if (this.ctx.roundRect) {
+                    this.ctx.roundRect(b.x - w/2, b.y - h/2, w, h, 12);
+                } else {
+                    this.ctx.rect(b.x - w/2, b.y - h/2, w, h);
+                }
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                // Reset shadow
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.shadowBlur = 0;
+                this.ctx.shadowOffsetY = 0;
+
+                // Text content
+                this.ctx.fillStyle = b.color || '#d32f2f'; // Dark red text
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(b.text, b.x, b.y);
+
+            } else {
+                // Player bullet -> Changed to Block Emoji
+                this.ctx.font = '20px sans-serif';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                // Remove color fill for shape, draw text instead
+                this.ctx.fillText('🚫', b.x, b.y);
+            }
+        });
+
+        // Particles
+        this.particles.forEach(p => {
+            this.ctx.fillStyle = p.color;
+            this.ctx.globalAlpha = p.life / 10;
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+            this.ctx.fill();
+            this.ctx.globalAlpha = 1;
+        });
+        
+        // Draw Breakthrough Banner
+        if (this.bannerEffect && this.bannerEffect.active) {
+            this.ctx.save();
+            
+            // Red Band Background
+            this.ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+            this.ctx.fillRect(0, this.height/2 - 40, this.width, 80);
+            
+            // Gold Borders
+            this.ctx.fillStyle = '#FFD700';
+            this.ctx.fillRect(0, this.height/2 - 40, this.width, 5);
+            this.ctx.fillRect(0, this.height/2 + 35, this.width, 5);
+
+            // Text
+            this.ctx.font = 'italic 900 32px sans-serif'; // Fallback font, bolder
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            
+            // Shadow
+            this.ctx.shadowColor = 'black';
+            this.ctx.shadowBlur = 0;
+            this.ctx.shadowOffsetX = 4;
+            this.ctx.shadowOffsetY = 4;
+            
+            // Moving Text
+            this.ctx.fillText(this.bannerEffect.text, this.bannerEffect.x, this.height/2);
+            
+            this.ctx.restore();
+        }
+
+        // Messages (Effects)
+        this.messages.forEach(m => {
+            this.ctx.font = `bold ${m.size}px sans-serif`;
+            this.ctx.fillStyle = m.color;
+            this.ctx.globalAlpha = m.life / 30;
+            this.ctx.fillText(m.text, m.x, m.y);
+            this.ctx.globalAlpha = 1;
+        });
+    }
+
+    loop() {
+        this.update();
+        this.draw();
+        requestAnimationFrame(this.loop);
+    }
+
+    gameOver(isWin = false) {
+        this.state = 'gameover';
+        const el = document.getElementById('game-result');
+        const title = document.getElementById('result-title');
+        const score = document.getElementById('result-score');
+        const msg = document.getElementById('result-message');
+        
+        // Add to cleared stages if win
+        if (isWin && this.stageId) {
+            this.clearedStages.add(this.stageId);
+        }
+
+        el.classList.remove('hidden');
+        if (isWin) {
+            title.innerText = "討伐成功！✨";
+            title.className = "text-4xl font-bold mb-4 text-green-500 drop-shadow-md";
+            msg.innerHTML = "わたしのATM❤<br><span class='text-4xl'>👧💰👨</span>";
+        } else {
+            title.innerText = "既読スルー失敗...";
+            title.className = "text-4xl font-bold mb-4 text-red-500 drop-shadow-md";
+            msg.innerHTML = "おいしいお店連れてってあげる<br><span class='text-4xl'>😁🍴👧</span>";
+        }
+        score.innerText = `Score: ${this.score}`;
+    }
+}
+
+// Start securely
+window.gameApp = null;
+document.addEventListener('DOMContentLoaded', () => {
+    window.gameApp = new GameApp();
+});
+</script>
+</body>
+</html>
